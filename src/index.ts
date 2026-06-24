@@ -46,5 +46,3 @@ await fastify.listen({
 });
 
 logger.info(`Server listening on: http://localhost:${port}`);
-
-import "./test-socket.js"
