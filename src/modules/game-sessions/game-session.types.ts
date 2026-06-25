@@ -6,6 +6,8 @@ export enum GameSessionStatus {
     ENDED = "ended"
 }
 
+export type GameSessionOptions = Record<string, unknown>;
+
 export type GameSessionEntity = {
     id: string;
     roomCode: string;
@@ -18,6 +20,7 @@ export type GameSessionEntity = {
     playersSnapshot: RoomPlayer[];
     createdAt: Date;
     updatedAt: Date;
+    options: GameSessionOptions;
 };
 
 export type GameSessionPlayerSnapshot = {
@@ -35,4 +38,5 @@ export type CreateGameSessionParams = {
     hostId: string;
     state?: GameSessionState;
     playersSnapshot: RoomPlayer[];
+    options?: GameSessionOptions;
 };

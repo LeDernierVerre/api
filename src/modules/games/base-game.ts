@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import GameSessionService from "../game-sessions/game-session.service.js";
-import { GameSessionPlayerSnapshot, GameSessionState } from "../game-sessions/game-session.types.js";
+import { GameSessionOptions, GameSessionPlayerSnapshot, GameSessionState } from "../game-sessions/game-session.types.js";
 import { gameClasses, GameEnum } from "./game.enum.js";
 import gameSessionRooms from "../game-sessions/realtime/game-session.rooms.js";
 
@@ -8,6 +8,7 @@ export interface GameData<T = GameSessionState> {
   sessionId: string;
   players: GameSessionPlayerSnapshot[];
   state: T;
+  options: GameSessionOptions;
   io: Server;
   sockets: Map<string, Map<string, Socket>>;
 }
@@ -21,14 +22,16 @@ export default abstract class BaseGame<TGameState extends GameSessionState> {
   private readonly players: GameSessionPlayerSnapshot[];
   private readonly io: Server;
   private readonly sockets: Map<string, Map<string, Socket>>;
+  private readonly options: GameSessionOptions;
 
   private state: TGameState;
 
-  public constructor({ sessionId, players, state, io, sockets }: GameData<TGameState>, initialState: TGameState) {
+  public constructor({ sessionId, players, state, options, io, sockets }: GameData<TGameState>, initialState: TGameState) {
     this.sessionId = sessionId;
     this.players = players;
     this.io = io;
     this.sockets = sockets;
+    this.options = options ?? {};
 
     const isEmptyState = Object.keys(state).length < 1;
     this.state = isEmptyState
@@ -47,6 +50,13 @@ export default abstract class BaseGame<TGameState extends GameSessionState> {
   }
   protected getPlayers() {
     return this.players;
+  }
+  protected getOptions() {
+    return this.options;
+  }
+
+  protected getPlayer(playerId: string) {
+    return this.players.find((player) => player.id === playerId);
   }
 
   protected async updateState(newState: Partial<TGameState>) {
@@ -71,6 +81,14 @@ export default abstract class BaseGame<TGameState extends GameSessionState> {
     gameSessionRooms.broadcast(this.io, {
       sessionId: this.sessionId,
       eventName: "game:public-state",
+      data
+    });
+  }
+
+  protected broadcastCustomEvent(eventName: string, data?: any) {
+    gameSessionRooms.broadcast(this.io, {
+      sessionId: this.sessionId,
+      eventName: `game:${eventName}`,
       data
     });
   }

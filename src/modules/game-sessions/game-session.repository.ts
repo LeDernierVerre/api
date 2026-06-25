@@ -16,7 +16,8 @@ export default class GameSessionRepository {
             hostId: params.hostId,
             state: params.state ?? {},
             playersSnapshot: params.playersSnapshot,
-            status: GameSessionStatus.RUNNING
+            status: GameSessionStatus.RUNNING,
+            options: params.options ?? {}
         });
     }
 

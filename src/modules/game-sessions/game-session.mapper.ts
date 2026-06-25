@@ -2,6 +2,7 @@ import GameSession from "./game-session.model.js";
 import {
     GameSessionEntity,
     GameSessionState,
+    GameSessionOptions,
     GameSessionPlayerSnapshot
 } from "./game-session.types.js";
 
@@ -20,8 +21,29 @@ export const toGameSessionEntity = (model: GameSession): GameSessionEntity => {
         startedAt: model.startedAt,
         endedAt: model.endedAt ?? null,
         createdAt: model.createdAt,
-        updatedAt: model.updatedAt
+        updatedAt: model.updatedAt,
+        options: parseOptions(model.options)
     };
+};
+
+const parseOptions = (options: unknown): GameSessionOptions => {
+    if (!options) {
+        return {};
+    }
+    
+    if (typeof options === "string") {
+        try {
+            return JSON.parse(options) as GameSessionOptions;
+        } catch {
+            return {};
+        }
+    }
+
+    if (typeof options === "object") {
+        return options as GameSessionOptions;
+    }
+
+    return {};
 };
 
 const parseState = (state: unknown): GameSessionState => {

@@ -36,6 +36,8 @@ export default class GameSession extends Model<
 
     declare updatedAt: CreationOptional<Date>;
 
+    declare options: CreationOptional<object>;
+
     public static initialize(sequelize: Sequelize) {
         GameSession.init(
             {
@@ -84,7 +86,11 @@ export default class GameSession extends Model<
                     allowNull: true
                 },
                 createdAt: DataTypes.DATE,
-                updatedAt: DataTypes.DATE
+                updatedAt: DataTypes.DATE,
+                options: {
+                    type: DataTypes.JSON,
+                    allowNull: true
+                }
             },
             {
                 sequelize,
