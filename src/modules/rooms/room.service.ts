@@ -16,7 +16,8 @@ export default class RoomService {
     public async createRoom(
         hostId: string,
         hostUsername: string,
-        gameId: GameEnum
+        gameId: GameEnum,
+        options: Record<string, unknown> = {}
     ): Promise<Room> {
         const maxAttempts = 5;
 
@@ -26,7 +27,8 @@ export default class RoomService {
                     code: generateRandomCode(),
                     hostId,
                     hostUsername,
-                    gameId
+                    gameId,
+                    options
                 });
             } catch (error) {
                 if (!(error instanceof Error)) throw error;
@@ -67,7 +69,7 @@ export default class RoomService {
 
     public async startRoom(
         code: string,
-        userId: string
+        userId: string,
     ) {
         const room = await this.roomRepository.findByCode(code);
 
@@ -88,7 +90,8 @@ export default class RoomService {
             hostId: room.hostId,
             roomCode: room.code,
             playersSnapshot: room.players,
-            state: {}
+            state: {},
+            options: room.options
         });
 
         room.status = RoomStatus.PLAYING;

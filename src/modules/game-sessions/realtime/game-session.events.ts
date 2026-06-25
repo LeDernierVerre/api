@@ -57,6 +57,7 @@ export const registerGameSessionEvents = async ({ socket, io }: IEventParams) =>
                 sessionId: gameSession.id,
                 players: gameSession.playersSnapshot,
                 state: gameSession.state,
+                options: gameSession.options,
                 io,
                 sockets: socketsBySession
             });
