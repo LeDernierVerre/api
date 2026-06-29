@@ -25,14 +25,18 @@ export default (app: FastifyInstance) => {
             }
         }
     }, async (request, reply) => {
-        const { gameId, options } = request.body as {
-            gameId: GameEnum;
-            options?: Record<string, unknown>;
-        };
-        const { id: hostId, username } = request.user!;
+        try {
+            const { gameId, options } = request.body as {
+                gameId: GameEnum;
+                options?: Record<string, unknown>;
+            };
+            const { id: hostId, username } = request.user!;
 
-        const room = await roomService.createRoom(hostId, username, gameId, options);
-        return reply.code(201).send({ room });
+            const room = await roomService.createRoom(hostId, username, gameId, options);
+            return reply.code(201).send({ room });
+        } catch(e) {
+            reply.send({error: e})
+        }
     });
 
     app.get("/:code", {
@@ -51,9 +55,13 @@ export default (app: FastifyInstance) => {
             }
         }
     }, async (request, reply) => {
-        const { code } = request.params as { code: string };
-        const room = await roomService.getRoom(code);
-        reply.code(200).send({room});
+        try {
+            const { code } = request.params as { code: string };
+            const room = await roomService.getRoom(code);
+            reply.code(200).send({room});
+        } catch(e) {
+            reply.send({error: e})
+        }
     });
 
     app.patch("/:code/join", {
@@ -72,15 +80,19 @@ export default (app: FastifyInstance) => {
             }
         }
     }, async (request, reply) => {
-        const { id, username } = request.user!;
-        const { code } = request.params as { code: string };
+        try {
+            const { id, username } = request.user!;
+            const { code } = request.params as { code: string };
 
-        const room = await roomService.joinRoom(code, {
-            id,
-            username
-        });
+            const room = await roomService.joinRoom(code, {
+                id,
+                username
+            });
 
-        return reply.send({ room });
+            return reply.send({ room });
+        } catch(e) {
+            return reply.send({error: e});
+        }
     });
 
     app.patch("/:code/leave", {
@@ -99,11 +111,15 @@ export default (app: FastifyInstance) => {
             }
         }
     }, async (request, reply) => {
-        const { id: playerId } = request.user!;
-        const { code } = request.params as { code: string };
+        try {
+            const { id: playerId } = request.user!;
+            const { code } = request.params as { code: string };
 
-        const room = await roomService.leaveRoom(code, playerId);
+            const room = await roomService.leaveRoom(code, playerId);
 
-        return reply.send({ room });
+            return reply.send({ room });
+        } catch(e) {
+            return reply.send({error: e})
+        }
     });
 }

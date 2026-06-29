@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-import jwtService from "./jwt.service.js";
 import UserService from "../user/user.service.js";
 
 const userService = new UserService();

@@ -11,6 +11,7 @@ import socketHook from "./socket.hook.js";
 import {RoomSockets} from "./socket-registry.js";
 import RoomService from "../modules/rooms/room.service.js";
 import roomEventsUtils from "../modules/rooms/realmtime/room-events.utils.js";
+import { RoomStatus } from "../modules/rooms/room.types.js";
 
 const roomService = new RoomService();
 
@@ -61,7 +62,8 @@ export const registerWebsocket = async (fastify: FastifyInstance) => {
     });
 
     socket.on("disconnect", async () => {
-        const currentSocket = roomSockets.getSocket(userId);
+      try {
+          const currentSocket = roomSockets.getSocket(userId);
         if(currentSocket?.id === socket.id) {
             roomSockets.unregister(userId);
         }
@@ -70,20 +72,22 @@ export const registerWebsocket = async (fastify: FastifyInstance) => {
             roomSockets.flush();
         }
 
-        const playerList = room?.players ?? [];
-        const idx = playerList.findIndex(p => p.id === user.id);
-        if(idx !== -1) {
-          playerList.splice(idx, 1);
-        }
-
-        roomEventsUtils.broadcast(io, {
+        // moyen ça
+        const currentRoom = await roomService.getRoom(roomCode);
+        if(currentRoom?.status !== RoomStatus.PLAYING) {
+          const room = await roomService.leaveRoom(roomCode, userId);
+          roomEventsUtils.broadcast(io, {
             roomCode,
             eventName: "room:player-left",
             data: { 
-              players: playerList,
+              players: room.players,
               username: user.username
             }
-        });
+          });
+        }
+      } catch(e) {
+        logger.error(e);
+      }
     });
   });
 }
