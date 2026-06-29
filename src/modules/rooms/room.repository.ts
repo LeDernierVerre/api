@@ -2,8 +2,6 @@ import { Room, RoomStatus } from "./room.types.js";
 import redis from "../../core/redis.js";
 import { GameEnum } from "../games/game.enum.js";
 
-const ROOM_TTL_SECONDS = 60 * 60 * 24;
-
 interface IRoomParams {
     code: string;
     hostId: string;
@@ -39,8 +37,7 @@ export default class RoomRepository {
             this.getRoomKey(room.code),
             JSON.stringify(room),
             {
-                NX: true,
-                EX: ROOM_TTL_SECONDS
+                NX: true
             }
         );
 
@@ -58,21 +55,13 @@ export default class RoomRepository {
             return null;
         }
 
-        const room = JSON.parse(rawRoom) as Room;
-
-        return {
-            ...room,
-            createdAt: new Date(room.createdAt)
-        };
+        return JSON.parse(rawRoom) as Room;
     }
 
     public async update(room: Room): Promise<Room> {
         await redis.set(
             this.getRoomKey(room.code),
-            JSON.stringify(room),
-            {
-                EX: ROOM_TTL_SECONDS
-            }
+            JSON.stringify(room)
         );
 
         return room;

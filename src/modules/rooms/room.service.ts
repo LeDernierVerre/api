@@ -90,7 +90,7 @@ export default class RoomService {
         room.players = room.players.filter((p) => p.id !== playerId);
 
         if (room.players.length === 0) {
-            await this.roomRepository.delete(code);
+            //await this.roomRepository.delete(code);
             return room;
         }
 
