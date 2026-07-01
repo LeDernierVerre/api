@@ -3,10 +3,14 @@ import { Card, CardSuit } from "../shared/cards/cards.type.js";
 import { createDeck56 } from "../shared/cards/decks.js";
 import { shuffleDeck } from "../shared/cards/index.js";
 
+type PmuChoice = {
+    cardSuit: CardSuit;
+    bet: number;
+}
 type PmuState = {
     stepNumber: number;
     maxNumberReach: number;
-    choices: Record<string, CardSuit>;
+    choices: Record<string, PmuChoice>;
     position: Record<CardSuit, number>;
     sideCards: Card[];
     deck: Card[];
@@ -19,6 +23,12 @@ type PmuState = {
 const DEFAULT_STEP = 6;
 const MIN_STEP = 3;
 const MAX_STEP = 12;
+
+const DEFAULT_BET = 1;
+const MIN_BET = 1;
+const MAX_BET = 10;
+const LOSER_MULTIPLIER = 1;
+const WINNER_MULTIPLIER = 2;
 
 export default class PmuGame extends BaseGame<PmuState> {
 
@@ -66,6 +76,16 @@ export default class PmuGame extends BaseGame<PmuState> {
         return Math.max(MIN_STEP, Math.min(MAX_STEP, value));
     }
 
+    private static resolveBet(raw: unknown): number {
+        const value = Math.trunc(Number(raw));
+
+        if (!Number.isFinite(value)) {
+            return DEFAULT_BET;
+        }
+
+        return Math.max(MIN_BET, Math.min(MAX_BET, value));
+    }
+
     public async initialize(): Promise<void> {
         this.broadcast(this.getPublicState());
     }
@@ -105,9 +125,9 @@ export default class PmuGame extends BaseGame<PmuState> {
     }
 
     private async makeChoice(playerId: string, payload: TGameActionPayload) {
-        const { cardSuit } = payload as { cardSuit?: CardSuit };
+        const { choice } = payload as { choice?: PmuChoice };
 
-        if (!cardSuit || !Object.values(CardSuit).includes(cardSuit)) {
+        if (!choice || !Object.values(CardSuit).includes(choice.cardSuit)) {
             throw new Error("Invalid or missing card suit");
         }
 
@@ -117,10 +137,15 @@ export default class PmuGame extends BaseGame<PmuState> {
             throw new Error("Game already started, bets are closed");
         }
 
-        state.choices[playerId] = cardSuit;
+        const normalized: PmuChoice = {
+            cardSuit: choice.cardSuit,
+            bet: PmuGame.resolveBet(choice.bet)
+        };
+
+        state.choices[playerId] = normalized;
         await this.updateState(state);
 
-        this.sendTo(playerId, { choice: cardSuit });
+        this.sendTo(playerId, { choice: normalized });
         this.broadcast(this.getPublicState());
     }
 
@@ -193,12 +218,38 @@ export default class PmuGame extends BaseGame<PmuState> {
             isFinished: state.isFinished,
             winner: state.winner,
             choices: state.choices,
+            results: this.getResults(state),
             players: this.getPlayers().map(player => ({
                 id: player.id,
                 username: player.username
             })),
             hostId: this.getPlayers().find(player => player.isHost)?.id ?? null
         };
+    }
+
+    // Décompte des gorgées quand la course est finie :
+    // le gagnant (a misé sur la couleur gagnante) fait boire sa mise ×2,
+    // le perdant boit sa mise.
+    private getResults(state: PmuState) {
+        if (!state.isFinished || !state.winner) {
+            return null;
+        }
+
+        return this.getPlayers()
+            .filter(player => state.choices[player.id])
+            .map(player => {
+                const choice = state.choices[player.id]!;
+                const won = choice.cardSuit === state.winner;
+
+                return {
+                    id: player.id,
+                    username: player.username,
+                    cardSuit: choice.cardSuit,
+                    bet: choice.bet,
+                    won,
+                    gorgees: choice.bet * (won ? WINNER_MULTIPLIER : LOSER_MULTIPLIER)
+                };
+            });
     }
 
     private getHandicaps(state: PmuState) {
